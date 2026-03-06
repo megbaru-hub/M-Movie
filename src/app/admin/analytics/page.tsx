@@ -11,7 +11,7 @@ export default async function AnalyticsPage() {
 
     // Summing views might be heavy if table is huge, but fine for now
     const shorts = await prisma.short.findMany({ select: { views: true } })
-    const totalShortsViews = shorts.reduce((acc, curr) => acc + curr.views, BigInt(0))
+    const totalShortsViews = shorts.reduce((acc: bigint, curr) => acc + curr.views, BigInt(0))
 
     // 2. Aggregate Growth / Engagement Last 7 Days
     const last7Days = Array.from({ length: 7 }, (_, i) => {

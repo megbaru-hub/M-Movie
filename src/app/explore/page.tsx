@@ -199,7 +199,7 @@ export default async function ExplorePage({ searchParams }: ExploreProps) {
             <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                 {movies.map((movie) => {
                     const avgRating = movie.ratings.length > 0
-                        ? movie.ratings.reduce((acc, r) => acc + r.value, 0) / movie.ratings.length
+                        ? movie.ratings.reduce((acc: number, r: { value: number }) => acc + r.value, 0) / movie.ratings.length
                         : 0;
 
                     return (
