@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
-import { writeFile, unlink } from 'fs/promises'
+import { uploadFile } from '@/lib/storage'
 import path from 'path'
-import { existsSync } from 'fs'
 
 export async function POST(request: NextRequest) {
     try {
@@ -33,32 +32,12 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'File too large. Maximum size is 5MB' }, { status: 400 })
         }
 
-        // Get file extension
+        // Generate file name
         const ext = file.type.split('/')[1]
-        const fileName = `${userId}.${ext}`
-        const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'avatars')
-        const filePath = path.join(uploadDir, fileName)
+        const fileName = `${userId}-${Date.now()}.${ext}`
 
-        // Delete old avatar if exists (with different extension)
-        const possibleExts = ['jpg', 'jpeg', 'png', 'webp']
-        for (const oldExt of possibleExts) {
-            const oldFile = path.join(uploadDir, `${userId}.${oldExt}`)
-            if (existsSync(oldFile) && oldFile !== filePath) {
-                try {
-                    await unlink(oldFile)
-                } catch (err) {
-                    console.error('Error deleting old avatar:', err)
-                }
-            }
-        }
-
-        // Convert file to buffer and save
-        const bytes = await file.arrayBuffer()
-        const buffer = Buffer.from(bytes)
-        await writeFile(filePath, buffer)
-
-        // Update user's image field in database
-        const imageUrl = `/uploads/avatars/${fileName}`
+        // Save using storage utility
+        const imageUrl = await uploadFile(file, fileName, 'avatars')
         await prisma.user.update({
             where: { id: userId },
             data: { image: imageUrl }

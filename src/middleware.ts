@@ -19,7 +19,7 @@ export function middleware(request: NextRequest) {
         return NextResponse.rewrite(new URL('/404', request.url))
     }
 
-    const [role, userId] = sessionValue.split(':')
+    const [role] = sessionValue.split(':')
 
     // 3. Basic Role-Based Path Protection
     // Super Admins can access everything in /admin

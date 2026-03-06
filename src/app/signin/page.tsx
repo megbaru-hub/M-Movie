@@ -1,12 +1,12 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Chrome, Loader2, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 
-export default function SignInPage() {
+function SignInContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const [isLoading, setIsLoading] = useState(false)
@@ -111,5 +111,17 @@ export default function SignInPage() {
                 </div>
             </div>
         </div>
+    )
+}
+
+export default function SignInPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 text-primary animate-spin" />
+            </div>
+        }>
+            <SignInContent />
+        </Suspense>
     )
 }

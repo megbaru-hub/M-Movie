@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { writeFile } from 'fs/promises'
+import { uploadFile } from '@/lib/storage'
 import path from 'path'
 
 import { transcodeVideo } from '@/lib/video-transcoding'
@@ -45,23 +45,15 @@ export async function POST(request: Request) {
         let videoPath = ''
         let thumbnailPath = ''
         let subtitlePath = ''
-        let fullVideoFilePath = '' // To store the full path for transcoding
-
-        const uploadDir = path.join(process.cwd(), 'public/uploads')
 
         if (videoFile) {
-            const buffer = Buffer.from(await videoFile.arrayBuffer())
             const filename = `${Date.now()}-${videoFile.name.replace(/\s/g, '_')}`
-            fullVideoFilePath = path.join(uploadDir, filename)
-            await writeFile(fullVideoFilePath, buffer)
-            videoPath = `/uploads/${filename}`
+            videoPath = await uploadFile(videoFile, filename)
         }
 
         if (thumbnailFile) {
-            const buffer = Buffer.from(await thumbnailFile.arrayBuffer())
             const filename = `${Date.now()}-thumb-${thumbnailFile.name.replace(/\s/g, '_')}`
-            await writeFile(path.join(uploadDir, filename), buffer)
-            thumbnailPath = `/uploads/${filename}`
+            thumbnailPath = await uploadFile(thumbnailFile, filename)
         }
 
         if (subtitleFile) {
@@ -77,8 +69,7 @@ export async function POST(request: Request) {
                 filename = filename.replace(/\.[^/.]+$/, "") + ".vtt"
             }
 
-            await writeFile(path.join(uploadDir, filename), buffer)
-            subtitlePath = `/uploads/${filename}`
+            subtitlePath = await uploadFile(buffer, filename)
         }
 
         // 4. Database Creation
@@ -100,9 +91,9 @@ export async function POST(request: Request) {
         })
 
         // 5. Trigger Transcoding in background if a video file was uploaded
-        if (videoFile && fullVideoFilePath) {
-            console.log(`Starting background transcoding for movie ${movie.id} from ${fullVideoFilePath}`);
-            transcodeVideo(movie.id, fullVideoFilePath).catch(err => {
+        if (videoFile && videoPath) {
+            console.log(`Starting background transcoding for movie ${movie.id} from ${videoPath}`);
+            transcodeVideo(movie.id, videoPath).catch(err => {
                 console.error(`Transcoding background error for movie ${movie.id}:`, err);
             });
         }

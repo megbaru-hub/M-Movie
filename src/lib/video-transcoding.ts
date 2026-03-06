@@ -12,6 +12,8 @@ const TARGET_QUALITIES = [
     { name: '144p', height: 144, maxBitrate: '200k' },
 ]
 
+const isCloud = !!process.env.VERCEL_URL || !!process.env.BLOB_READ_WRITE_TOKEN;
+
 async function getSourceMetadata(filePath: string): Promise<{ height: number }> {
     return new Promise((resolve) => {
         const ffprobe = spawn('ffprobe', [
@@ -23,7 +25,7 @@ async function getSourceMetadata(filePath: string): Promise<{ height: number }> 
         ])
 
         let output = ''
-        ffprobe.stdout.on('data', (data) => output += data.toString())
+        ffprobe.stdout.on('data', (data: Buffer | string) => output += data.toString())
         ffprobe.on('close', () => {
             const height = parseInt(output.trim())
             resolve({ height: isNaN(height) ? 1080 : height })
@@ -32,6 +34,18 @@ async function getSourceMetadata(filePath: string): Promise<{ height: number }> 
 }
 
 export async function transcodeVideo(movieId: number, sourceFilePath: string) {
+    if (isCloud) {
+        console.log(`[Transcoding] Serverless environment detected. Skipping FFmpeg transcoding for Movie ID: ${movieId}`)
+        // In serverless, we just register the original file as the 1080p quality variant so the player has something to work with
+        // Note: sourceFilePath will be a URL if isCloud is true
+        await prisma.movieVariant.upsert({
+            where: { movieId_quality: { movieId, quality: 1080 } },
+            update: { file: sourceFilePath },
+            create: { movieId, quality: 1080, file: sourceFilePath }
+        })
+        return
+    }
+
     console.log(`[Transcoding] Starting process for Movie ID: ${movieId}`)
 
     const publicDir = path.join(process.cwd(), 'public')
@@ -56,7 +70,7 @@ export async function transcodeVideo(movieId: number, sourceFilePath: string) {
                 const variantPath = path.join(publicDir, variant.file)
                 try {
                     await fs.unlink(variantPath)
-                } catch (e) {
+                } catch {
                     // Ignore if file doesn't exist
                 }
                 await prisma.movieVariant.delete({ where: { id: variant.id } })
@@ -93,7 +107,7 @@ export async function transcodeVideo(movieId: number, sourceFilePath: string) {
                     outputPathAbsolute
                 ])
 
-                ffmpeg.on('close', (code) => {
+                ffmpeg.on('close', (code: number | null) => {
                     if (code === 0) resolve(true)
                     else reject(new Error(`FFmpeg exited with code ${code}`))
                 })

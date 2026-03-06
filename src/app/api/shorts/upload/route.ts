@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
-import { writeFile } from 'fs/promises'
+import { uploadFile } from '@/lib/storage'
 import path from 'path'
 
 export async function POST(request: Request) {
@@ -35,12 +35,9 @@ export async function POST(request: Request) {
 
         // Generate unique filename
         const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`
-        const uploadDir = path.join(process.cwd(), 'public/uploads/shorts')
-        const relativePath = `/uploads/shorts/${filename}`
-        const filePath = path.join(uploadDir, filename)
 
-        // Save file to public/uploads/shorts
-        await writeFile(filePath, buffer)
+        // Save file using storage utility
+        const relativePath = await uploadFile(file, filename, 'shorts')
 
         // Generate slug
         const slug = title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') + '-' + Math.floor(Math.random() * 1000)

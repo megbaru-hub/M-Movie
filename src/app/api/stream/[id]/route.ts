@@ -44,6 +44,11 @@ export async function GET(
     }
 
     if (videoFileInDb) {
+        // Handle external URLs (Vercel Blob)
+        if (videoFileInDb.startsWith('http')) {
+            return NextResponse.redirect(videoFileInDb)
+        }
+
         // New System: Path is stored in originalFile, usually starts with /uploads
         const PUBLIC_DIR = path.join(process.cwd(), 'public')
         // Removing leading slash for join

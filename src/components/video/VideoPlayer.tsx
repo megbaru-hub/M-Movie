@@ -171,6 +171,62 @@ export default function VideoPlayer({
         }
     }, [onNext])
 
+    const formatTime = (time: number) => {
+        const minutes = Math.floor(time / 60)
+        const seconds = Math.floor(time % 60)
+        return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`
+    }
+
+    const togglePlay = () => {
+        if (!videoRef.current) return
+        if (isPlaying) {
+            videoRef.current.pause()
+        } else {
+            videoRef.current.play().catch(e => {
+                console.error("Play failed:", e)
+                setHasError(true)
+            })
+        }
+        setIsPlaying(!isPlaying)
+    }
+
+    const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const time = parseFloat(e.target.value)
+        if (videoRef.current) {
+            videoRef.current.currentTime = time
+            setProgress(time)
+        }
+    }
+
+    const toggleMute = () => {
+        if (videoRef.current) {
+            videoRef.current.muted = !isMuted
+            setIsMuted(!isMuted)
+        }
+    }
+
+    const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = parseFloat(e.target.value)
+        setVolume(val)
+        if (videoRef.current) {
+            videoRef.current.volume = val
+            setIsMuted(val === 0)
+        }
+    }
+
+    const toggleFullscreen = () => {
+        if (!containerRef.current) return
+        if (!document.fullscreenElement) {
+            containerRef.current.requestFullscreen()
+            setIsFullscreen(true)
+        } else {
+            document.exitFullscreen()
+            setIsFullscreen(false)
+        }
+    }
+
+    const toggleZoom = () => setZoomLevel(prev => prev === 'contain' ? 'cover' : 'contain')
+
     // Keyboard Shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -228,7 +284,7 @@ export default function VideoPlayer({
 
         window.addEventListener('keydown', handleKeyDown)
         return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [volume, isMuted, isPlaying])
+    }, [togglePlay, volume, isMuted, isPlaying, toggleFullscreen, toggleMute])
 
     // Subtitles Effect
     useEffect(() => {
@@ -241,61 +297,7 @@ export default function VideoPlayer({
         }
     }, [showSubtitles, subtitleUrl])
 
-    const formatTime = (time: number) => {
-        const minutes = Math.floor(time / 60)
-        const seconds = Math.floor(time % 60)
-        return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`
-    }
 
-    const togglePlay = () => {
-        if (!videoRef.current) return
-        if (isPlaying) {
-            videoRef.current.pause()
-        } else {
-            videoRef.current.play().catch(e => {
-                console.error("Play failed:", e)
-                setHasError(true)
-            })
-        }
-        setIsPlaying(!isPlaying)
-    }
-
-    const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const time = parseFloat(e.target.value)
-        if (videoRef.current) {
-            videoRef.current.currentTime = time
-            setProgress(time)
-        }
-    }
-
-    const toggleMute = () => {
-        if (videoRef.current) {
-            videoRef.current.muted = !isMuted
-            setIsMuted(!isMuted)
-        }
-    }
-
-    const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = parseFloat(e.target.value)
-        setVolume(val)
-        if (videoRef.current) {
-            videoRef.current.volume = val
-            setIsMuted(val === 0)
-        }
-    }
-
-    const toggleFullscreen = () => {
-        if (!containerRef.current) return
-        if (!document.fullscreenElement) {
-            containerRef.current.requestFullscreen()
-            setIsFullscreen(true)
-        } else {
-            document.exitFullscreen()
-            setIsFullscreen(false)
-        }
-    }
-
-    const toggleZoom = () => setZoomLevel(prev => prev === 'contain' ? 'cover' : 'contain')
 
     const handleSeekClick = (side: 'left' | 'right', e: React.MouseEvent) => {
         // Double-click detection: check detail from native event

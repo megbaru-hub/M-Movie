@@ -1,0 +1,32 @@
+services:
+  movie-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: m-movie-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      # Persist the SQLite database
+      - ./prisma:/app/prisma
+      # Persist the uploaded and transcoded videos
+      - ./public/uploads:/app/public/uploads
+    env_file:
+      - .env
+    environment:
+      # Default environment variables that can be overridden by .env file
+      - NODE_ENV=production
+      - NEXTAUTH_URL=http://localhost:3000
+      - DATABASE_URL=file:./dev.db
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  # Using host mounts for simplicity as requested by common dev patterns, 
+  # but named volumes are also an option.
+  prisma_data:
+  upload_data:

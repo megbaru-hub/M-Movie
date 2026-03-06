@@ -44,7 +44,7 @@ export default function WatchlistButton({ movieId, initialIsAdded, variant = 'la
             } else {
                 toast('Failed to update watchlist', 'error')
             }
-        } catch (error) {
+        } catch (_error) {
             toast('Archive synchronization failure', 'error')
         } finally {
             setIsPending(false)

@@ -23,6 +23,11 @@ export async function GET(
         return new NextResponse('No video source available', { status: 404 })
     }
 
+    // Handle external URLs (Vercel Blob)
+    if (short.videoFile.startsWith('http')) {
+        return NextResponse.redirect(short.videoFile)
+    }
+
     // 2. Resolve File Path 
     // For Shorts, we stored them in public/uploads/shorts/
     const PUBLIC_DIR = path.join(process.cwd(), 'public')
