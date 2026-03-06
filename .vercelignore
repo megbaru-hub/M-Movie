@@ -1,0 +1,9 @@
+# Exclude local media uploads from Vercel deployment
+public/uploads/
+.next/
+node_modules/
+.git/
+*.db
+*.db-journal
+.env
+.env.local
